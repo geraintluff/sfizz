@@ -199,12 +199,7 @@ public:
     FilePool();
 
     ~FilePool();
-    /**
-     * @brief Set the root directory from which to search for files to load
-     *
-     * @param directory
-     */
-    void setRootDirectory(const fs::path& directory) noexcept { rootDirectory = directory; }
+
     /**
      * @brief Get the number of preloaded sample files
      *
@@ -251,22 +246,24 @@ public:
     FileDataHolder loadFromRam(const FileId& fileId, const std::vector<char>& data) noexcept;
 
     /**
-     * @brief Check that the sample exists. If not, try to find it in a case insensitive way.
+     * @brief Resolve a sample to an absolute path if it exists, including a case insensitive search.
      *
+     * @param rootDirectory the root directory to start the search from
      * @param filename the sample filename; may be updated by the method
      * @return true if the sample exists or was updated properly
      * @return false if no sample was found even with a case insensitive search
      */
-    bool checkSample(std::string& filename) const noexcept;
+    bool resolveSample(const fs::path &rootDirectory, std::string& filename) const noexcept;
 
     /**
-     * @brief Check that the sample exists. If not, try to find it in a case insensitive way.
+     * @brief Resolve a sample to an absolute path if it exists, including a case insensitive search.
      *
+     * @param rootDirectory the root directory to start the search from
      * @param fileId the sample file identifier; may be updated by the method
      * @return true if the sample exists or was updated properly
      * @return false if no sample was found even with a case insensitive search
      */
-    bool checkSampleId(FileId& fileId) const noexcept;
+    bool resolveSampleId(const fs::path &rootDirectory, FileId& fileId) const noexcept;
 
     /**
      * @brief Clear all preloaded files.
@@ -341,7 +338,6 @@ public:
 private:
 
     absl::optional<sfz::FileInformation> checkExistingFileInformation(const FileId& fileId) noexcept;
-    fs::path rootDirectory;
 
     bool loadInRam { config::loadInRam };
     uint32_t preloadSize { config::preloadSize };

@@ -331,6 +331,7 @@ struct Synth::Impl final: public Parser::Listener {
     Resources resources_;
 
     // Root path
+    fs::path rootDirectory_;
     std::string rootPath_;
 
     // Control opcodes

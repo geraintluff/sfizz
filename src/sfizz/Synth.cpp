@@ -284,6 +284,7 @@ void Synth::Impl::clear()
     sets_.clear();
     layers_.clear();
     resources_.clearNonState();
+    rootDirectory_.clear();
     rootPath_.clear();
     numGroups_ = 0;
     numMasters_ = 0;
@@ -699,11 +700,10 @@ void Synth::Impl::finalizeSfzLoad()
     FilePool& filePool = resources_.getFilePool();
     WavetablePool& wavePool = resources_.getWavePool();
 
-    const fs::path& rootDirectory = parser_.originalDirectory();
-    filePool.setRootDirectory(rootDirectory);
+    rootDirectory_ = parser_.originalDirectory();
 
     // a string representation used for OSC purposes
-    rootPath_ = u8EncodedString(rootDirectory);
+    rootPath_ = u8EncodedString(rootDirectory_);
 
     size_t currentRegionIndex = 0;
     size_t currentRegionCount = layers_.size();
@@ -736,7 +736,7 @@ void Synth::Impl::finalizeSfzLoad()
         absl::optional<FileInformation> fileInformation;
 
         if (!region.isGenerator()) {
-            if (!filePool.checkSampleId(*region.sampleId)) {
+            if (!filePool.resolveSampleId(rootDirectory_, *region.sampleId)) {
                 removeCurrentRegion();
                 continue;
             }

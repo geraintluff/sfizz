@@ -166,12 +166,15 @@ sfz::FilePool::~FilePool()
         job.wait();
 }
 
-bool sfz::FilePool::checkSample(std::string& filename) const noexcept
+bool sfz::FilePool::resolveSample(const fs::path &rootDirectory, std::string& filename) const noexcept
 {
     fs::path path { rootDirectory / filename };
     std::error_code ec;
-    if (fs::exists(path, ec))
+    if (fs::exists(path, ec)) {
+        DBG("Resolving " << filename << " to absolute path " << path);
+        filename = path.string();
         return true;
+    }
 
 #if defined(_WIN32)
     return false;
@@ -220,24 +223,19 @@ bool sfz::FilePool::checkSample(std::string& filename) const noexcept
         path /= it->path().filename();
     }
 
-    const auto newPath = fs::relative(path, rootDirectory, ec);
-    if (ec) {
-        DBG("Error extracting the new relative path for " << filename << " (Error code: " << ec.message() << ")");
-        return false;
-    }
-    DBG("Updating " << filename << " to " << newPath);
-    filename = newPath.string();
+    DBG("Resolving " << filename << " to absolute path " << path);
+    filename = path.string();
     return true;
 #endif
 }
 
-bool sfz::FilePool::checkSampleId(FileId& fileId) const noexcept
+bool sfz::FilePool::resolveSampleId(const fs::path &rootDirectory, FileId& fileId) const noexcept
 {
     if (loadedFiles.contains(fileId))
         return true;
 
     std::string filename = fileId.filename();
-    bool result = checkSample(filename);
+    bool result = resolveSample(rootDirectory, filename);
     if (result)
         fileId = FileId(std::move(filename), fileId.isReverse());
     return result;
@@ -298,7 +296,7 @@ absl::optional<sfz::FileInformation> sfz::FilePool::getFileInformation(const Fil
     if (existingInformation)
         return existingInformation;
 
-    const fs::path file { rootDirectory / fileId.filename() };
+    const fs::path file { fileId.filename() };
 
     if (!fs::exists(file))
         return {};
@@ -320,7 +318,7 @@ bool sfz::FilePool::preloadFile(const FileId& fileId, uint32_t maxOffset) noexce
         return false;
 
     fileInformation->maxOffset = maxOffset;
-    const fs::path file { rootDirectory / fileId.filename() };
+    const fs::path file { fileId.filename() };
     AudioReaderPtr reader = createAudioReader(file, fileId.isReverse());
 
     const auto frames = static_cast<uint32_t>(reader->frames());
@@ -395,7 +393,7 @@ sfz::FileDataHolder sfz::FilePool::loadFile(const FileId& fileId) noexcept
         return { &existingFile->second };
     }
 
-    const fs::path file { rootDirectory / fileId.filename() };
+    const fs::path file { fileId.filename() };
     AudioReaderPtr reader = createAudioReader(file, fileId.isReverse());
 
     const auto frames = static_cast<uint32_t>(reader->frames());
@@ -468,7 +466,7 @@ void sfz::FilePool::setPreloadSize(uint32_t preloadSize) noexcept
         auto& fileId = preloadedFile.first;
         auto& fileData = preloadedFile.second;
         const auto maxOffset = fileData.information.maxOffset;
-        fs::path file { rootDirectory / fileId.filename() };
+        fs::path file { fileId.filename() };
         AudioReaderPtr reader = createAudioReader(file, fileId.isReverse());
         const auto frames = reader->frames();
         const auto framesToLoad = min(frames, maxOffset + preloadSize);
@@ -487,7 +485,7 @@ void sfz::FilePool::loadingJob(const QueuedFileData& data) noexcept
         return;
     }
 
-    const fs::path file { rootDirectory / id->filename() };
+    const fs::path file { id->filename() };
     std::error_code readError;
     AudioReaderPtr reader = createAudioReader(file, id->isReverse(), &readError);
 
@@ -640,7 +638,7 @@ void sfz::FilePool::setRamLoading(bool loadInRam) noexcept
 
     if (loadInRam) {
         for (auto& preloadedFile : preloadedFiles) {
-            fs::path file { rootDirectory / preloadedFile.first.filename() };
+            fs::path file { preloadedFile.first.filename() };
             AudioReaderPtr reader = createAudioReader(file, preloadedFile.first.isReverse());
             auto& fileData = preloadedFile.second;
             fileData.preloadedData = readFromFile(
