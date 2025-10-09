@@ -212,7 +212,10 @@ public:
      *
      * @return size_t
      */
-    size_t getNumPreloadedSamples() const noexcept { return preloadedFiles.size() + loadedFiles.size(); }
+    size_t getNumPreloadedSamples() const noexcept {
+        std::shared_lock<std::shared_mutex> guard{loadedFilesMutex};
+        return preloadedFiles.size() + loadedFiles.size();
+    }
 
     /**
      * @brief Get metadata information about a file.

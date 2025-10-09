@@ -557,16 +557,13 @@ void sfz::FilePool::loadingJob(const QueuedFileData& data) noexcept
 void sfz::FilePool::clear()
 {
     if (ignoreClear) return;
+    std::unique_lock<std::shared_mutex> loadedFilesGuard{loadedFilesMutex};
     std::lock_guard<SpinMutex> guard { garbageAndLastUsedMutex };
     emptyFileLoadingQueues();
     garbageToCollect.clear();
     lastUsedFiles.clear();
-
-    {
-        std::unique_lock<std::shared_mutex> guard{loadedFilesMutex};
-        preloadedFiles.clear();
-        loadedFiles.clear();
-    }
+    preloadedFiles.clear();
+    loadedFiles.clear();
 }
 
 uint32_t sfz::FilePool::getPreloadSize() const noexcept
