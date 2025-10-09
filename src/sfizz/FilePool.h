@@ -45,6 +45,7 @@
 #include <thread>
 #include <future>
 #include <memory>
+#include <shared_mutex>
 class ThreadPool;
 
 namespace sfz {
@@ -195,8 +196,10 @@ public:
      *
      * This creates the background threads based on config::numBackgroundThreads
      * as well as the garbage collection thread.
+
+     * @param ignoreClear ignore `.clear()` calls
      */
-    FilePool();
+    FilePool(bool ignoreClear=false);
 
     ~FilePool();
 
@@ -336,8 +339,7 @@ public:
      */
     void triggerGarbageCollection() noexcept;
 private:
-
-    absl::optional<sfz::FileInformation> checkExistingFileInformation(const FileId& fileId) noexcept;
+    const bool ignoreClear;
 
     bool loadInRam { config::loadInRam };
     uint32_t preloadSize { config::preloadSize };
@@ -375,7 +377,9 @@ private:
 
     std::shared_ptr<ThreadPool> threadPool;
 
-    // Preloaded data
+    // (Pre)loaded data
+    mutable std::shared_mutex loadedFilesMutex;
+    absl::optional<FileInformation> getFileInformationAlreadyLocked(const FileId& fileId) noexcept;
     absl::flat_hash_map<FileId, FileData> preloadedFiles;
     absl::flat_hash_map<FileId, FileData> loadedFiles;
     LEAK_DETECTOR(FilePool);

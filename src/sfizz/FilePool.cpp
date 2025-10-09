@@ -141,8 +141,9 @@ void streamFromFile(sfz::AudioReader& reader, sfz::FileAudioBuffer& output, std:
     }
 }
 
-sfz::FilePool::FilePool()
-    : filesToLoad(alignedNew<FileQueue>()),
+sfz::FilePool::FilePool(bool ignoreClear)
+    : ignoreClear(ignoreClear),
+      filesToLoad(alignedNew<FileQueue>()),
       threadPool(globalThreadPool())
 {
     loadingJobs.reserve(config::maxVoices);
@@ -231,8 +232,11 @@ bool sfz::FilePool::resolveSample(const fs::path &rootDirectory, std::string& fi
 
 bool sfz::FilePool::resolveSampleId(const fs::path &rootDirectory, FileId& fileId) const noexcept
 {
-    if (loadedFiles.contains(fileId))
-        return true;
+    {
+        std::unique_lock<std::shared_mutex> guard{loadedFilesMutex};
+        if (loadedFiles.contains(fileId))
+            return true;
+    }
 
     std::string filename = fileId.filename();
     bool result = resolveSample(rootDirectory, filename);
@@ -277,8 +281,15 @@ absl::optional<sfz::FileInformation> getReaderInformation(sfz::AudioReader* read
     return returnedValue;
 }
 
-absl::optional<sfz::FileInformation> sfz::FilePool::checkExistingFileInformation(const FileId& fileId) noexcept
+absl::optional<sfz::FileInformation> sfz::FilePool::getFileInformation(const FileId& fileId) noexcept
 {
+    std::unique_lock<std::shared_mutex> guard{loadedFilesMutex};
+    return getFileInformationAlreadyLocked(fileId);
+}
+
+absl::optional<sfz::FileInformation> sfz::FilePool::getFileInformationAlreadyLocked(const FileId& fileId) noexcept
+{
+    // Check for existing information
     const auto loadedFile = loadedFiles.find(fileId);
     if (loadedFile != loadedFiles.end())
         return loadedFile->second.information;
@@ -286,15 +297,6 @@ absl::optional<sfz::FileInformation> sfz::FilePool::checkExistingFileInformation
     const auto preloadedFile = preloadedFiles.find(fileId);
     if (preloadedFile != preloadedFiles.end())
         return preloadedFile->second.information;
-
-    return {};
-}
-
-absl::optional<sfz::FileInformation> sfz::FilePool::getFileInformation(const FileId& fileId) noexcept
-{
-    auto existingInformation = checkExistingFileInformation(fileId);
-    if (existingInformation)
-        return existingInformation;
 
     const fs::path file { fileId.filename() };
 
@@ -307,13 +309,15 @@ absl::optional<sfz::FileInformation> sfz::FilePool::getFileInformation(const Fil
 
 bool sfz::FilePool::preloadFile(const FileId& fileId, uint32_t maxOffset) noexcept
 {
+    std::unique_lock<std::shared_mutex> guard{loadedFilesMutex};
+
     const auto loadedFile = loadedFiles.find(fileId);
     if (loadedFile != loadedFiles.end()) {
         loadedFile->second.preloadCallCount++;
         return true;
     }
 
-    auto fileInformation = getFileInformation(fileId);
+    auto fileInformation = getFileInformationAlreadyLocked(fileId);
     if (!fileInformation)
         return false;
 
@@ -355,6 +359,8 @@ bool sfz::FilePool::preloadFile(const FileId& fileId, uint32_t maxOffset) noexce
 
 void sfz::FilePool::resetPreloadCallCounts() noexcept
 {
+    std::unique_lock<std::shared_mutex> guard{loadedFilesMutex};
+
     for (auto& preloadedFile: preloadedFiles)
         preloadedFile.second.preloadCallCount = 0;
 
@@ -364,6 +370,8 @@ void sfz::FilePool::resetPreloadCallCounts() noexcept
 
 void sfz::FilePool::removeUnusedPreloadedData() noexcept
 {
+    std::unique_lock<std::shared_mutex> guard{loadedFilesMutex};
+
     for (auto it = preloadedFiles.begin(), end = preloadedFiles.end(); it != end; ) {
         auto copyIt = it++;
         if (copyIt->second.preloadCallCount == 0) {
@@ -383,7 +391,9 @@ void sfz::FilePool::removeUnusedPreloadedData() noexcept
 
 sfz::FileDataHolder sfz::FilePool::loadFile(const FileId& fileId) noexcept
 {
-    auto fileInformation = getFileInformation(fileId);
+    std::unique_lock<std::shared_mutex> guard{loadedFilesMutex};
+
+    auto fileInformation = getFileInformationAlreadyLocked(fileId);
     if (!fileInformation)
         return {};
 
@@ -409,6 +419,8 @@ sfz::FileDataHolder sfz::FilePool::loadFile(const FileId& fileId) noexcept
 
 sfz::FileDataHolder sfz::FilePool::loadFromRam(const FileId& fileId, const std::vector<char>& data) noexcept
 {
+    std::unique_lock<std::shared_mutex> guard{loadedFilesMutex};
+
     const auto loaded = loadedFiles.find(fileId);
     if (loaded != loadedFiles.end())
         return { &loaded->second };
@@ -429,6 +441,9 @@ sfz::FileDataHolder sfz::FilePool::loadFromRam(const FileId& fileId, const std::
 
 sfz::FileDataHolder sfz::FilePool::getFilePromise(const std::shared_ptr<FileId>& fileId) noexcept
 {
+    // Only need a shared (non-exclusive) lock since we're not changing the file lists, only querying them
+    std::shared_lock<std::shared_mutex> guard{loadedFilesMutex};
+    
     const auto loaded = loadedFiles.find(*fileId);
     if (loaded != loadedFiles.end())
         return { &loaded->second };
@@ -457,6 +472,8 @@ sfz::FileDataHolder sfz::FilePool::getFilePromise(const std::shared_ptr<FileId>&
 
 void sfz::FilePool::setPreloadSize(uint32_t preloadSize) noexcept
 {
+    std::unique_lock<std::shared_mutex> guard{loadedFilesMutex};
+
     this->preloadSize = preloadSize;
     if (loadInRam)
         return;
@@ -539,12 +556,17 @@ void sfz::FilePool::loadingJob(const QueuedFileData& data) noexcept
 
 void sfz::FilePool::clear()
 {
+    if (ignoreClear) return;
     std::lock_guard<SpinMutex> guard { garbageAndLastUsedMutex };
     emptyFileLoadingQueues();
     garbageToCollect.clear();
     lastUsedFiles.clear();
-    preloadedFiles.clear();
-    loadedFiles.clear();
+
+    {
+        std::unique_lock<std::shared_mutex> guard{loadedFilesMutex};
+        preloadedFiles.clear();
+        loadedFiles.clear();
+    }
 }
 
 uint32_t sfz::FilePool::getPreloadSize() const noexcept
@@ -637,6 +659,8 @@ void sfz::FilePool::setRamLoading(bool loadInRam) noexcept
     this->loadInRam = loadInRam;
 
     if (loadInRam) {
+        std::unique_lock<std::shared_mutex> guard{loadedFilesMutex};
+
         for (auto& preloadedFile : preloadedFiles) {
             fs::path file { preloadedFile.first.filename() };
             AudioReaderPtr reader = createAudioReader(file, preloadedFile.first.isReverse());
@@ -662,6 +686,9 @@ void sfz::FilePool::triggerGarbageCollection() noexcept
     swapAndPopAll(lastUsedFiles, [&](const FileId& id) {
         if (garbageToCollect.size() == garbageToCollect.capacity())
            return false;
+
+        // Only need a shared (non-exclusive) lock since we're deciding whether it should be removed
+        std::shared_lock<std::shared_mutex> guard{loadedFilesMutex};
 
         auto it = preloadedFiles.find(id);
         if (it == preloadedFiles.end()) {
