@@ -25,7 +25,7 @@ class Metronome;
 class Resources
 {
 public:
-    Resources();
+    Resources(const std::shared_ptr<FilePool> &maybeFilePool);
     ~Resources();
 
     void setSampleRate(float samplerate);

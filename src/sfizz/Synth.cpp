@@ -49,8 +49,8 @@ namespace sfz {
 // unless set to permissive, the loader rejects sfz files with errors
 static constexpr bool loaderParsesPermissively = true;
 
-Synth::Synth()
-: impl_(new Impl) // NOLINT: (paul) I don't get why clang-tidy complains here
+Synth::Synth(const std::shared_ptr<FilePool> &maybeFilePool)
+: impl_(new Impl(maybeFilePool)) // NOLINT: (paul) I don't get why clang-tidy complains here
 {
 }
 
@@ -60,7 +60,8 @@ Synth::~Synth()
 
 }
 
-Synth::Impl::Impl()
+Synth::Impl::Impl(const std::shared_ptr<FilePool> &maybeFilePool)
+ : resources_(maybeFilePool)
 {
     initializeSIMDDispatchers();
     initializeInterpolators();

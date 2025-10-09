@@ -35,10 +35,30 @@
 //! @endcond
 
 struct sfizz_synth_t;
+struct sfizz_shared_files_t;
 
 namespace sfz
 {
 class Client;
+class Sfizz;
+
+/**
+ * @brief Class for sharing file-access and caching between synths.
+*
+* This object is thread-safe, and can either be kept or discarded after being
+* used to construct synthesizers.
+*/
+class SFIZZ_EXPORTED_API SharedFiles
+{
+public:
+	SharedFiles();
+	SharedFiles(const SharedFiles &other);
+	~SharedFiles();
+private:
+    friend class Sfizz;
+    sfizz_shared_files_t* sharedFiles;
+};
+
 /**
  * @brief Synthesizer for SFZ instruments
 *
@@ -69,6 +89,8 @@ public:
      * You should change these values if they are not suited to your application.
      */
     Sfizz();
+    explicit Sfizz(const SharedFiles &);
+    explicit Sfizz(sfizz_shared_files_t* shared);
     ~Sfizz();
 
     /**

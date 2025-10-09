@@ -197,9 +197,13 @@ public:
      * This creates the background threads based on config::numBackgroundThreads
      * as well as the garbage collection thread.
 
-     * @param ignoreClear ignore `.clear()` calls
+     * @param shared ignore explicit `.clear()` calls, rely fully on GC
      */
-    FilePool(bool ignoreClear=false);
+    FilePool(bool shared=false);
+    
+    bool isShared() const noexcept {
+	return ignoreClear;
+    }
 
     ~FilePool();
 
@@ -339,6 +343,7 @@ public:
      */
     void triggerGarbageCollection() noexcept;
 private:
+    // Ignore `.clear()` calls, which is necessary if we're used by multiple `Synth`s
     const bool ignoreClear;
 
     bool loadInRam { config::loadInRam };

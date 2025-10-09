@@ -19,7 +19,7 @@
 namespace sfz {
 
 struct Synth::Impl final: public Parser::Listener {
-    Impl();
+    Impl(const std::shared_ptr<FilePool> &maybeFilePool);
     ~Impl();
 
     /**

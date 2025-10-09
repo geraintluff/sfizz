@@ -16,9 +16,29 @@
 extern "C" {
 #endif
 
+sfizz_shared_files_t* sfizz_create_shared_files()
+{
+    return new sfizz_shared_files_t;
+}
+
+sfizz_shared_files_t* sfizz_copy_shared_files(sfizz_shared_files_t* other)
+{
+    return new sfizz_shared_files_t(*other);
+}
+
+void sfizz_free_shared_files(sfizz_shared_files_t* sharedFiles)
+{
+	delete sharedFiles;
+}
+
 sfizz_synth_t* sfizz_create_synth()
 {
     return new sfizz_synth_t;
+}
+
+sfizz_synth_t* sfizz_create_synth_with_shared_files(sfizz_shared_files_t* sharedFiles)
+{
+    return new sfizz_synth_t(sharedFiles);
 }
 
 bool sfizz_load_file(sfizz_synth_t* synth, const char* path)

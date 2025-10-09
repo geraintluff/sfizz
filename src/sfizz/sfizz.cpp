@@ -10,8 +10,33 @@
 #include "sfizz_private.hpp"
 #include "absl/memory/memory.h"
 
+sfz::SharedFiles::SharedFiles()
+    : sharedFiles(new sfizz_shared_files_t)
+{
+}
+
+sfz::SharedFiles::SharedFiles(const sfz::SharedFiles &other)
+    : sharedFiles(new sfizz_shared_files_t(*other.sharedFiles))
+{
+}
+
+sfz::SharedFiles::~SharedFiles()
+{
+    delete sharedFiles;
+}
+
 sfz::Sfizz::Sfizz()
     : synth(new sfizz_synth_t)
+{
+}
+
+sfz::Sfizz::Sfizz(const sfz::SharedFiles &shared)
+    : synth(new sfizz_synth_t(shared.sharedFiles))
+{
+}
+
+sfz::Sfizz::Sfizz(sfizz_shared_files_t *sharedFiles)
+    : synth(new sfizz_synth_t(sharedFiles))
 {
 }
 

@@ -23,17 +23,25 @@ struct Resources::Impl {
     BufferPool bufferPool;
     MidiState midiState;
     CurveSet curves;
-    FilePool filePool;
+    std::shared_ptr<FilePool> filePoolPtr;
+    FilePool &filePool{*filePoolPtr};
     WavetablePool wavePool;
     Tuning tuning;
     absl::optional<StretchTuning> stretch;
     ModMatrix modMatrix;
     BeatClock beatClock;
     Metronome metronome;
+    
+    Impl(const std::shared_ptr<FilePool> &maybeFilePool);
 };
 
-Resources::Resources()
-    : impl_(new Impl)
+Resources::Impl::Impl(const std::shared_ptr<FilePool> &maybeFilePool)
+    : filePoolPtr(maybeFilePool ? maybeFilePool : std::shared_ptr<FilePool>{new FilePool(false)})
+{
+}
+
+Resources::Resources(const std::shared_ptr<FilePool> &maybeFilePool)
+    : impl_(new Impl(maybeFilePool))
 {
 }
 

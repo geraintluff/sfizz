@@ -141,8 +141,8 @@ void streamFromFile(sfz::AudioReader& reader, sfz::FileAudioBuffer& output, std:
     }
 }
 
-sfz::FilePool::FilePool(bool ignoreClear)
-    : ignoreClear(ignoreClear),
+sfz::FilePool::FilePool(bool shared)
+    : ignoreClear(shared),
       filesToLoad(alignedNew<FileQueue>()),
       threadPool(globalThreadPool())
 {

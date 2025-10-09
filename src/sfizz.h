@@ -62,6 +62,12 @@ extern "C" {
 typedef struct sfizz_synth_t sfizz_synth_t;
 
 /**
+ * @brief Shared file-access handle.
+ * @since 1.2.x
+ */
+typedef struct sfizz_shared_files_t sfizz_shared_files_t;
+
+/**
  * @brief Oversampling factor
  * @since 0.2.0
  */
@@ -82,6 +88,31 @@ typedef enum {
 } sfizz_process_mode_t;
 
 /**
+ * @brief Creates a shared file-access handle and returns a reference
+ *
+ * This reference has to be freed by the caller using sfizz_free_shared_files().
+ * It can be used to share file-access threads and caches between synths
+ * @since 1.2.x
+ */
+SFIZZ_EXPORTED_API sfizz_shared_files_t* sfizz_create_shared_files();
+
+/**
+ * @brief Copies a shared file-access reference
+ *
+ * The underlying shared file-access will live until all references are freed.
+ * @since 1.2.x
+ */
+SFIZZ_EXPORTED_API sfizz_shared_files_t* sfizz_copy_shared_files(sfizz_shared_files_t* other);
+
+/**
+ * @brief Frees a handle shared file-access manager.
+ * @since 1.2.x
+ *
+ * @param sharedFiles  The shared file-access to destroy.
+ */
+SFIZZ_EXPORTED_API void sfizz_free_shared_files(sfizz_shared_files_t* sharedFiles);
+
+/**
  * @brief Creates a sfizz synth.
  *
  * This object has to be freed by the caller using sfizz_free().
@@ -90,6 +121,16 @@ typedef enum {
  * @since 0.2.0
  */
 SFIZZ_EXPORTED_API sfizz_synth_t* sfizz_create_synth();
+
+/**
+ * @brief Creates a sfizz synth with shared file-access
+ *
+ * This object has to be freed by the caller using sfizz_free().
+ * The synth by default is set at 48 kHz and a maximum block size of 1024.
+ * You should change these values if they are not correct for your application.
+ * @since 1.2.x
+ */
+SFIZZ_EXPORTED_API sfizz_synth_t* sfizz_create_synth_with_shared_files(sfizz_shared_files_t* sharedFiles);
 
 /**
  * @brief Frees an existing sfizz synth.

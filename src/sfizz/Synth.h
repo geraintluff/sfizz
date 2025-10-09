@@ -75,7 +75,13 @@ public:
      * @brief Construct a new Synth object with a default number of voices.
      *
      */
-    Synth();
+    Synth() : Synth(nullptr) {}
+    /**
+     * @brief Construct a new Synth object using a shared `FilePool`
+     *
+     */
+    Synth(const std::shared_ptr<FilePool> &);
+
     /**
      * @brief Destructor
      */
