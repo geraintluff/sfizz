@@ -368,7 +368,7 @@ private:
         FileData* data { nullptr };
     };
 
-    using FileQueue = atomic_queue::AtomicQueue2<QueuedFileData, config::maxVoices>;
+    using FileQueue = atomic_queue::AtomicQueue2<QueuedFileData, config::maxFilePromises>;
     aligned_unique_ptr<FileQueue> filesToLoad;
 
     void dispatchingJob() noexcept;
