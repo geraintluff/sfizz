@@ -1,5 +1,7 @@
 # sfizz
 
+**Thread-free branch for compiling Sfizz in Emscripten**.  See [@paulfd's PR](https://github.com/sfztools/sfizz/pull/1020) for info.
+
 [![Travis Build Status]](https://travis-ci.com/sfztools/sfizz)
 [![AppVeyor Build Status]](https://ci.appveyor.com/project/sfztools/sfizz)
 
