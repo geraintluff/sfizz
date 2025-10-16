@@ -159,10 +159,12 @@ float sfz::MidiState::getVelocityOverride() const noexcept
 void sfz::MidiState::insertEventInVector(EventVector& events, int delay, float value)
 {
     const auto insertionPoint = absl::c_lower_bound(events, delay, MidiEventDelayComparator {});
-    if (insertionPoint == events.end() || insertionPoint->delay != delay)
+    if (insertionPoint == events.end() || insertionPoint->delay != delay && events.size() < events.capacity())
         events.insert(insertionPoint, { delay, value });
-    else
+    else if (insertionPoint == events.end())
         insertionPoint->value = value;
+    else
+        events.back() = {delay, value};
 }
 
 void sfz::MidiState::pitchBendEvent(int delay, float pitchBendValue) noexcept
