@@ -7,6 +7,8 @@
 #pragma once
 #include "absl/types/optional.h"
 #include <memory>
+#include "BitArray.h"
+#include "Config.h"
 
 namespace sfz {
 
@@ -29,7 +31,7 @@ public:
     ~Resources();
 
     void setSampleRate(float samplerate);
-    void setSamplesPerBlock(int samplesPerBlock);
+    void setSamplesPerBlock(int samplesPerBlock, const BitArray<config::numCCs>&);
     /**
      * @brief Clear resources that are related to a currently loaded SFZ file
      *

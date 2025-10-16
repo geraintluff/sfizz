@@ -58,11 +58,11 @@ void Resources::setSampleRate(float samplerate)
     impl.metronome.init(samplerate);
 }
 
-void Resources::setSamplesPerBlock(int samplesPerBlock)
+void Resources::setSamplesPerBlock(int samplesPerBlock, const BitArray<config::numCCs>& usedCCs)
 {
     Impl& impl = *impl_;
     impl.bufferPool.setBufferSize(samplesPerBlock);
-    impl.midiState.setSamplesPerBlock(samplesPerBlock);
+    impl.midiState.setSamplesPerBlock(samplesPerBlock, usedCCs);
     impl.modMatrix.setSamplesPerBlock(samplesPerBlock);
     impl.beatClock.setSamplesPerBlock(samplesPerBlock);
 }

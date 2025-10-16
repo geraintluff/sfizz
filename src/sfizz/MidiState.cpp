@@ -105,15 +105,22 @@ void sfz::MidiState::flushEvents() noexcept
 }
 
 
-void sfz::MidiState::setSamplesPerBlock(int samplesPerBlock) noexcept
+void sfz::MidiState::setSamplesPerBlock(int samplesPerBlock, const BitArray<config::numCCs>& usedCCs) noexcept
 {
     auto updateEventBufferSize = [=] (EventVector& events) {
         events.shrink_to_fit();
         events.reserve(samplesPerBlock);
     };
     this->samplesPerBlock = samplesPerBlock;
-    for (auto& events: ccEvents)
-        updateEventBufferSize(events);
+    for (size_t ccNum = 0; ccNum < config::numCCs; ++ccNum) {
+        auto &events = ccEvents[ccNum];
+        if (usedCCs.test(ccNum)) {
+            updateEventBufferSize(events);
+        } else {
+            events.resize(1);
+            events.shrink_to_fit();
+        }
+    }
 
     for (auto& events: polyAftertouchEvents)
         updateEventBufferSize(events);

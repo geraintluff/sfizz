@@ -980,6 +980,9 @@ void Synth::Impl::finalizeSfzLoad()
                 swLastSlots_.set(key);
         }
     }
+
+    if (samplesPerBlock_ > 0)
+        resources_.setSamplesPerBlock(samplesPerBlock_, currentUsedCCs_);
 }
 
 bool Synth::loadScalaFile(const fs::path& path)
@@ -1057,7 +1060,7 @@ void Synth::setSamplesPerBlock(int samplesPerBlock) noexcept
     for (auto& voice : impl.voiceManager_)
         voice.setSamplesPerBlock(samplesPerBlock);
 
-    impl.resources_.setSamplesPerBlock(samplesPerBlock);
+    impl.resources_.setSamplesPerBlock(samplesPerBlock, impl.currentUsedCCs_);
 
     for (int i = 0; i < impl.numOutputs_; ++i) {
         for (auto& bus : impl.getEffectBusesForOutput(i)) {

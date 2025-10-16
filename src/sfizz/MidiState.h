@@ -9,6 +9,7 @@
 #include <bitset>
 #include "CCMap.h"
 #include "Range.h"
+#include "BitArray.h"
 
 namespace sfz
 {
@@ -68,8 +69,9 @@ public:
      * than this value.
      *
      * @param samplesPerBlock
+     * @param usedCCs which CCs are used or referenced by the currently-loaded patch
      */
-    void setSamplesPerBlock(int samplesPerBlock) noexcept;
+    void setSamplesPerBlock(int samplesPerBlock, const BitArray<config::numCCs>& usedCCs) noexcept;
     /**
      * @brief Set the sample rate. If you do not call it it is initialized
      * to sfz::config::defaultSampleRate.
