@@ -197,7 +197,11 @@ void HarmonicProfile::generate(
 
     kiss_fftr_cfg cfg = kiss_fftr_alloc(size, true, nullptr, nullptr);
     if (!cfg)
+#ifdef __wasm__
+        abort();
+#else
         throw std::bad_alloc();
+#endif
 
     // bins need scaling and phase offset; this IFFT is a sum of cosines
     const std::complex<double> k = std::polar(amplitude * 0.5, M_PI / 2);
@@ -541,7 +545,11 @@ bool WavetablePool::createFileWave(FilePool& filePool, const std::string& filena
 
     kiss_fftr_cfg cfg = kiss_fftr_alloc(fftSize, false, nullptr, nullptr);
     if (!cfg)
+#ifdef __wasm__
+        abort();
+#else
         throw std::bad_alloc();
+#endif
 
     kiss_fftr(cfg, audioData.data(), reinterpret_cast<kiss_fft_cpx*>(spec.get()));
     kiss_fftr_free(cfg);

@@ -28,7 +28,11 @@ T *ordinary_allocator<T, Traits>::allocate(std::size_t n, const void *)
 {
     T *ptr = (T *)Traits::allocate(n * sizeof(T));
     if (!ptr)
+#ifdef __wasm__
+        abort();
+#else
         throw std::bad_alloc();
+#endif
     return ptr;
 }
 

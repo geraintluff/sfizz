@@ -200,7 +200,11 @@ public:
     void resize(size_t newSize)
     {
         if (!resize(newSize, std::nothrow))
+#ifdef __wasm__
+            abort();
+#else
             throw std::bad_alloc();
+#endif
     }
 
     /**

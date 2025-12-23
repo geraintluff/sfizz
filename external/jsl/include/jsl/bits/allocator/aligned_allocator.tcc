@@ -31,7 +31,11 @@ void *aligned_allocator_traits<Al>::allocate(std::size_t n)
 #else
     void *p;
     if (::posix_memalign(&p, Al, n) != 0)
+#ifdef __wasm__
+        abort();
+#else
         throw std::bad_alloc();
+#endif
     return p;
 #endif
 }

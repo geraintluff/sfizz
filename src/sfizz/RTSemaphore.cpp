@@ -10,12 +10,18 @@
 #include <cerrno>
 #include <ctime>
 
+#ifndef __wasm__
+#   define THROW_SYSTEM_ERROR(ec) throw std::system_error(ec)
+#else
+#   define THROW_SYSTEM_ERROR(ec) abort()
+#endif
+
 RTSemaphore::RTSemaphore(unsigned value)
 {
     std::error_code ec;
     init(ec, value);
     if (ec)
-        throw std::system_error(ec);
+        THROW_SYSTEM_ERROR(ec);
     good_ = true;
 }
 
@@ -38,7 +44,7 @@ void RTSemaphore::post()
     std::error_code ec;
     post(ec);
     if (ec)
-        throw std::system_error(ec);
+        THROW_SYSTEM_ERROR(ec);
 }
 
 void RTSemaphore::wait()
@@ -46,7 +52,7 @@ void RTSemaphore::wait()
     std::error_code ec;
     wait(ec);
     if (ec)
-        throw std::system_error(ec);
+        THROW_SYSTEM_ERROR(ec);
 }
 
 bool RTSemaphore::try_wait()
@@ -54,7 +60,7 @@ bool RTSemaphore::try_wait()
     std::error_code ec;
     bool b = try_wait(ec);
     if (ec)
-        throw std::system_error(ec);
+        THROW_SYSTEM_ERROR(ec);
     return b;
 }
 
@@ -63,7 +69,7 @@ bool RTSemaphore::timed_wait(uint32_t milliseconds)
     std::error_code ec;
     bool b = timed_wait(milliseconds, ec);
     if (ec)
-        throw std::system_error(ec);
+        THROW_SYSTEM_ERROR(ec);
     return b;
 }
 
@@ -316,3 +322,5 @@ bool RTSemaphore::timed_wait(uint32_t milliseconds, std::error_code& ec) noexcep
     } while (1);
 }
 #endif
+
+#undef THROW_SYSTEM_ERROR

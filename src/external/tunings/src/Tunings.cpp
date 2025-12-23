@@ -19,6 +19,12 @@
 #include <cctype>
 #include <cmath>
 
+#ifndef __wasm__
+#   define THROW_OR_ABORT(e) throw e
+#else
+#   define THROW_OR_ABORT(e) abort()
+#endif
+
 namespace Tunings
 {
     static double locale_atof(const char* s)
@@ -59,7 +65,7 @@ namespace Tunings
                 if( lineno >= 0 )
                     s += "Line " + std::to_string(lineno) + ".";
                 s += " Line is '" + line + "'.";
-                throw TuningError(s);
+                THROW_OR_ABORT(TuningError(s));
             }
             // 2^(cents/1200) = n/d
             // cents = 1200 * log2(n/d)
@@ -97,7 +103,7 @@ namespace Tunings
                 res.count = atoi(line.c_str());
                 if(res.count < 0 || res.count > MAX_CAPACITY)
                 {
-                    throw TuningError( "Tone count invalid or too large in SCL file." );
+                    THROW_OR_ABORT(TuningError( "Tone count invalid or too large in SCL file." ));
                 }
                 state = ( res.count > 0 ) ? read_note : trailing;
                 break;
@@ -112,14 +118,14 @@ namespace Tunings
 
         if( ! ( state == read_note || state == trailing ) )
         {
-            throw TuningError( "Incomplete SCL file. Found no notes section in the file." );
+            THROW_OR_ABORT(TuningError( "Incomplete SCL file. Found no notes section in the file." ));
         }
 
         if( tone_index != res.count )
         {
             std::string s = "Read fewer notes than count in file. Count = " + std::to_string( res.count )
                 + " notes. Array size = " + std::to_string( tone_index );
-            throw TuningError(s);
+            THROW_OR_ABORT(TuningError(s));
 
         }
         return res;
@@ -132,7 +138,7 @@ namespace Tunings
         if (!inf.is_open())
         {
             std::string s = "Unable to open file '" + fname + "'";
-            throw TuningError(s);
+            THROW_OR_ABORT(TuningError(s));
         }
 
         auto res = readSCLStream(inf);
@@ -163,9 +169,9 @@ namespace Tunings
     Scale evenDivisionOfSpanByM( int Span, int M )
     {
         if( Span <= 0 )
-            throw Tunings::TuningError( "Span should be a positive number. You entered " + std::to_string( Span ) );
+            THROW_OR_ABORT(Tunings::TuningError( "Span should be a positive number. You entered " + std::to_string( Span ) ));
         if( M <= 0 )
-            throw Tunings::TuningError( "You must divide the period into at least one step. You entered " + std::to_string( M ) );
+            THROW_OR_ABORT(Tunings::TuningError( "You must divide the period into at least one step. You entered " + std::to_string( M ) ));
 
         std::ostringstream oss;
         oss.imbue( std::locale( "C" ) );
@@ -231,8 +237,8 @@ namespace Tunings
                 }
                 if( ! validLine )
                 {
-                    throw TuningError( "Invalid line " + std::to_string( lineno ) + ". line='" + line + "'. Bad character is '" +
-                                       badChar + "/" + std::to_string( (int)badChar ) + "'" );
+                    THROW_OR_ABORT(TuningError( "Invalid line " + std::to_string( lineno ) + ". line='" + line + "'. Bad character is '" +
+                                       badChar + "/" + std::to_string( (int)badChar ) + "'" ));
                 }
             }
 
@@ -245,7 +251,7 @@ namespace Tunings
                 res.count = i;
                 if(res.count < 0 || res.count > MAX_CAPACITY)
                 {
-                    throw TuningError( "Key count invalid or too large in KBM file." );
+                    THROW_OR_ABORT(TuningError( "Key count invalid or too large in KBM file." ));
                 }
                 break;
             case first_midi:
@@ -281,13 +287,13 @@ namespace Tunings
 
         if( ! ( state == keys || state == trailing ) )
         {
-            throw TuningError( "Incomplete KBM file. Unable to get to keys section of file." );
+            THROW_OR_ABORT(TuningError( "Incomplete KBM file. Unable to get to keys section of file." ));
         }
 
         if( key_index != res.count )
         {
-            throw TuningError( "Different number of keys than mapping file indicates. Count is "
-                               + std::to_string( res.count ) + " and we parsed " + std::to_string( key_index ) + " keys." );
+            THROW_OR_ABORT(TuningError( "Different number of keys than mapping file indicates. Count is "
+                               + std::to_string( res.count ) + " and we parsed " + std::to_string( key_index ) + " keys." ));
         }
 
         return res;
@@ -300,7 +306,7 @@ namespace Tunings
         if (!inf.is_open())
         {
             std::string s = "Unable to open file '" + fname + "'";
-            throw TuningError(s);
+            THROW_OR_ABORT(TuningError(s));
         }
 
         auto res = readKBMStream(inf);
@@ -326,7 +332,7 @@ namespace Tunings
         keyboardMapping = k;
 
         if( s.count <= 0 )
-            throw TuningError( "Unable to tune to a scale with no notes. Your scale provided " + std::to_string( s.count ) + " notes." );
+            THROW_OR_ABORT(TuningError( "Unable to tune to a scale with no notes. Your scale provided " + std::to_string( s.count ) + " notes." ));
 
 
         double pitches[N];
@@ -551,3 +557,5 @@ namespace Tunings
     }
 
 }
+
+#undef THROW_OR_ABORT

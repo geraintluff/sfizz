@@ -169,6 +169,9 @@ bool Tuning::loadScalaFile(const fs::path& path)
         goto failure;
     }
 
+#ifdef __wasm__
+    scl = Tunings::readSCLStream(stream);
+#else
     try {
         scl = Tunings::readSCLStream(stream);
     }
@@ -176,6 +179,7 @@ bool Tuning::loadScalaFile(const fs::path& path)
         DBG("Tuning: " << error.what());
         goto failure;
     }
+#endif
 
     if (scl.count <= 0) {
         DBG("The scale file is empty: " << path);
@@ -195,6 +199,9 @@ bool Tuning::loadScalaString(const std::string& text)
     Tunings::Scale scl;
     std::istringstream stream(text);
 
+#ifdef __wasm__
+    scl = Tunings::readSCLStream(stream);
+#else
     try {
         scl = Tunings::readSCLStream(stream);
     }
@@ -202,6 +209,7 @@ bool Tuning::loadScalaString(const std::string& text)
         DBG("Tuning: " << error.what());
         goto failure;
     }
+#endif
 
     if (scl.count <= 0) {
         DBG("Error loading scala string: " << text);
