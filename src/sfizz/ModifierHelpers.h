@@ -196,7 +196,9 @@ void multiplicativeEnvelope(const EventVector& events, absl::Span<float> envelop
     ASSERT(events[0].delay == 0);
     ASSERT(step != 0.0f);
 
+#ifndef __wasm__
     ScopedRoundingMode roundingMode { Round ? FE_TONEAREST : FE_TOWARDZERO };
+#endif
 
     if (envelope.size() == 0)
         return;

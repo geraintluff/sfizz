@@ -40,7 +40,7 @@ namespace config {
     constexpr uint16_t xfadeSmoothing { 5 };
     constexpr uint16_t gainSmoothing { 0 };
     constexpr unsigned powerTableSizeExponent { 11 };
-    constexpr int maxFilePromises { maxVoices*8 };
+    constexpr int maxFilePromises { maxVoices };
     constexpr int allSoundOffCC { 120 };
     constexpr int resetCC { 121 };
     constexpr int allNotesOffCC { 123 };

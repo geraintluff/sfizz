@@ -33,6 +33,8 @@
 #endif
 #elif defined(__EMSCRIPTEN__)
 #define PLATFORM_EMSCRIPTEN 1
+#elif defined(__wasm__)
+#define PLATFORM_WASM 1
 #else
 #error "Unable to determine operating system"
 #endif
